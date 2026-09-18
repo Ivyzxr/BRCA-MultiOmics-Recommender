@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width,initial-scale=1.0">
+   <title>BRCA Multi-Omics Recommender</title>
+
+   <link rel="stylesheet" href="style.css">
+   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+</head>
+
+<body>
+
+<header class="hero">
+   <div class="container">
+      <h1>Breast Cancer Multi-Omics Integration Recommender</h1>
+      <p>
+         Interactive recommendation of multi-omics combinations and integration
+         algorithms based on the TCGA-BRCA benchmark.
+      </p>
+   </div>
+</header>
+
+<main class="container">
+
+   <!-- =====================================================
+        Wizard Progress
+   ====================================================== -->
+
+   <div class="wizard-progress">
+      <div class="wizard-step active" data-step="1">
+         <span class="step-number">1</span>
+         <span>Select Omics</span>
+      </div>
+
+      <div class="step-line"></div>
+
+      <div class="wizard-step" data-step="2">
+         <span class="step-number">2</span>
+         <span>Combination</span>
+      </div>
+
+      <div class="step-line"></div>
+
+      <div class="wizard-step" data-step="3">
+         <span class="step-number">3</span>
+         <span>Algorithm</span>
+      </div>
+
+      <div class="step-line"></div>
+
+      <div class="wizard-step" data-step="4">
+         <span class="step-number">4</span>
+         <span>Details</span>
+      </div>
+   </div>
+
+
+   <!-- =====================================================
+        STEP 1
+   ====================================================== -->
+
+   <section id="step1" class="step-page active panel">
+
+      <div class="step-heading">
+         <span class="step-tag">Step 1 of 4</span>
+         <h2>Select Available Omics</h2>
+         <p>Select the omics data types available in your study.</p>
+      </div>
+
+      <div class="omics-grid">
+
+         <label class="omics-option">
+            <input type="checkbox" value="CNV" checked>
+            <div>
+               <strong>CNV</strong>
+               <span>Copy Number Variation</span>
+            </div>
+         </label>
+
+         <label class="omics-option">
+            <input type="checkbox" value="MET" checked>
+            <div>
+               <strong>MET</strong>
+               <span>DNA Methylation</span>
+            </div>
+         </label>
+
+         <label class="omics-option">
+            <input type="checkbox" value="MIR" checked>
+            <div>
+               <strong>MIR</strong>
+               <span>miRNA</span>
+            </div>
+         </label>
+
+         <label class="omics-option">
+            <input type="checkbox" value="RNA" checked>
+            <div>
+               <strong>RNA</strong>
+               <span>mRNA Expression</span>
+            </div>
+         </label>
+
+         <label class="omics-option">
+            <input type="checkbox" value="PRO" checked>
+            <div>
+               <strong>PRO</strong>
+               <span>Protein</span>
+            </div>
+         </label>
+
+         <label class="omics-option">
+            <input type="checkbox" value="SNP" checked>
+            <div>
+               <strong>SNP</strong>
+               <span>Mutation</span>
+            </div>
+         </label>
+
+      </div>
+
+      <div class="selection-summary">
+         <strong>Selected:</strong>
+         <span id="selectedOmics"></span>
+      </div>
+
+      <div id="step1Error" class="error-message hidden">
+         Please select at least two omics data types.
+      </div>
+
+      <div class="wizard-actions">
+         <div>
+            <button id="selectAllBtn" class="btn secondary">Select All</button>
+            <button id="clearAllBtn" class="btn secondary">Clear All</button>
+         </div>
+
+         <button id="step1Next" class="btn primary">
+            Find Combinations →
+         </button>
+      </div>
+
+   </section>
+
+
+   <!-- =====================================================
+        STEP 2
+        Select + Evaluate Combination
+   ====================================================== -->
+
+   <section id="step2" class="step-page panel">
+
+      <div class="step-heading">
+         <span class="step-tag">Step 2 of 4</span>
+         <h2>Select a Multi-Omics Combination</h2>
+         <p>
+            Compatible combinations are ordered by the primary cross-algorithm
+            Final Rank. Lower Final FR indicates a higher benchmark ranking.
+         </p>
+      </div>
+
+      <div class="step2-summary">
+         <div>
+            <strong>Available omics:</strong>
+            <span id="step2Omics"></span>
+         </div>
+
+         <div id="combinationCount" class="count-badge"></div>
+      </div>
+
+      <!-- Combination table -->
+
+      <div class="table-wrapper">
+         <table>
+            <thead>
+               <tr>
+                  <th>Rank</th>
+                  <th>Combination</th>
+                  <th>Final FR</th>
+                  <th>Algorithms</th>
+               </tr>
+            </thead>
+
+            <tbody id="combinationTableBody"></tbody>
+         </table>
+      </div>
+
+      <div id="noCombinationMessage" class="empty-message hidden">
+         No compatible combinations were found.
+      </div>
+
+
+      <!-- Combination Evaluation -->
+
+      <div id="combinationEvaluation" class="combination-evaluation hidden">
+
+         <div class="evaluation-heading">
+            <span>Selected Combination</span>
+            <h3 id="selectedCombinationName"></h3>
+         </div>
+
+         <div class="key-evaluation-grid">
+
+            <div class="stat-card">
+               <span>Primary Rank</span>
+               <strong id="detailFinalRank">-</strong>
+            </div>
+
+            <div class="stat-card">
+               <span>Final FR</span>
+               <strong id="detailFinalFR">-</strong>
+            </div>
+
+            <div class="stat-card">
+               <span>Bootstrap Median Rank</span>
+               <strong id="detailBootstrapMedianRank">-</strong>
+            </div>
+
+            <div class="stat-card">
+               <span>Top-20 Probability</span>
+               <strong id="detailTop20">-</strong>
+            </div>
+
+         </div>
+
+
+         <!-- Detailed combination information -->
+
+         <details id="combinationDetails" class="details-box">
+            <summary>View combination evaluation details</summary>
+
+            <div class="detail-grid">
+
+               <div>
+                  <strong>Supporting Algorithms</strong>
+                  <span id="detailSupportAlgorithms">-</span>
+               </div>
+
+               <div>
+                  <strong>Between-Algorithm SD</strong>
+                  <span id="detailSD">-</span>
+               </div>
+
+               <div>
+                  <strong>95% Rank Interval</strong>
+                  <span id="detailRankCI">-</span>
+               </div>
+
+               <div>
+                  <strong>Top-10 Probability</strong>
+                  <span id="detailTop10">-</span>
+               </div>
+
+               <div>
+                  <strong>Top-5 Probability</strong>
+                  <span id="detailTop5">-</span>
+               </div>
+
+               <div>
+                  <strong>Rank #1 Probability</strong>
+                  <span id="detailRank1">-</span>
+               </div>
+
+               <div>
+                  <strong>Mean Bootstrap FR</strong>
+                  <span id="detailBootstrapFRMean">-</span>
+               </div>
+
+               <div>
+                  <strong>Median Bootstrap FR</strong>
+                  <span id="detailBootstrapFRMedian">-</span>
+               </div>
+
+               <div>
+                  <strong>95% FR Interval</strong>
+                  <span id="detailFRCI">-</span>
+               </div>
+
+               <div>
+                  <strong>Mean Bootstrap Rank</strong>
+                  <span id="detailBootstrapRankMean">-</span>
+               </div>
+
+               <div>
+                  <strong>Mean Absolute Rank Shift</strong>
+                  <span id="detailMeanShift">-</span>
+               </div>
+
+               <div>
+                  <strong>Bootstrap Replicates</strong>
+                  <span id="detailBootstrapN">-</span>
+               </div>
+
+            </div>
+         </details>
+
+      </div>
+
+
+      <div class="wizard-actions">
+         <button id="step2Back" class="btn secondary">← Back</button>
+
+         <button id="step2Next" class="btn primary" disabled>
+            Continue to Algorithms →
+         </button>
+      </div>
+
+   </section>
+
+
+   <!-- =====================================================
+        STEP 3
+        Algorithm Selection Only
+   ====================================================== -->
+
+   <section id="step3" class="step-page panel">
+
+      <div class="step-heading">
+         <span class="step-tag">Step 3 of 4</span>
+         <h2>Select an Integration Algorithm</h2>
+         <p>
+            Algorithm ranking for the selected multi-omics combination.
+         </p>
+      </div>
+
+
+      <div class="selected-combination-bar">
+         <span>Selected Combination</span>
+         <strong id="step3Combination"></strong>
+      </div>
+
+
+      <p class="note">
+         <strong>NormRank:</strong> normalized rank of this combination within
+         each algorithm's candidate space; lower is better.
+      </p>
+
+
+      <div class="table-wrapper">
+         <table>
+            <thead>
+               <tr>
+                  <th>Algorithm Rank</th>
+                  <th>Algorithm</th>
+                  <th>NormRank</th>
+                  <th>Combination Rank within Algorithm</th>
+               </tr>
+            </thead>
+
+            <tbody id="algorithmTableBody"></tbody>
+         </table>
+      </div>
+
+
+      <div class="wizard-actions">
+         <button id="step3Back" class="btn secondary">← Back</button>
+
+         <button id="step3Next" class="btn primary" disabled>
+            View Algorithm Details →
+         </button>
+      </div>
+
+   </section>
+
+
+   <!-- =====================================================
+        STEP 4
+   ====================================================== -->
+
+   <section id="step4" class="step-page panel">
+
+      <div class="step-heading">
+         <span class="step-tag">Step 4 of 4</span>
+         <h2>Algorithm Details</h2>
+      </div>
+
+
+      <!-- Algorithm introduction -->
+
+      <div class="algorithm-header">
+         <h3 id="algorithmName"></h3>
+         <p id="algorithmFullName"></p>
+      </div>
+
+      <p id="algorithmDescription" class="algorithm-description"></p>
+
+
+      <!-- Selected combination -->
+
+      <div class="selected-combination-box">
+         <span>Selected Combination</span>
+         <strong id="step4Combination"></strong>
+      </div>
+
+
+      <!-- Key information -->
+
+      <div class="summary-grid">
+
+         <div class="summary-card">
+            <span>Algorithm Rank</span>
+            <strong id="algRank">-</strong>
+         </div>
+
+         <div class="summary-card">
+            <span>NormRank</span>
+            <strong id="algNormRank">-</strong>
+         </div>
+
+         <div class="summary-card">
+            <span>Combination Rank within Algorithm</span>
+            <strong id="algCombinationRank">-</strong>
+         </div>
+
+      </div>
+
+
+      <!-- Reference -->
+
+      <div class="reference-box">
+         <h3>Reference and Software</h3>
+
+         <p id="articleTitle" class="article-title"></p>
+
+         <p class="doi-line">
+            <strong>DOI:</strong>
+            <span id="articleDOI"></span>
+         </p>
+
+         <div class="reference-buttons">
+            <a id="articleLink"
+               class="btn primary"
+               href="#"
+               target="_blank"
+               rel="noopener noreferrer">
+               Original Article
+            </a>
+
+            <a id="softwareLink"
+               class="btn secondary"
+               href="#"
+               target="_blank"
+               rel="noopener noreferrer">
+               Software
+            </a>
+         </div>
+      </div>
+
+
+      <!-- Detailed performance -->
+
+      <details id="performanceDetails"
+               class="details-box performance-details">
+
+         <summary>View benchmark performance metrics</summary>
+
+         <div class="detail-grid">
+
+            <div>
+               <strong>Avg Rank</strong>
+               <span id="algAvgRank">-</span>
+            </div>
+
+            <div>
+               <strong>NMI</strong>
+               <span id="algNMI">-</span>
+            </div>
+
+            <div>
+               <strong>ARI</strong>
+               <span id="algARI">-</span>
+            </div>
+
+            <div>
+               <strong>Accuracy</strong>
+               <span id="algAccuracy">-</span>
+            </div>
+
+            <div>
+               <strong>Macro-F1</strong>
+               <span id="algMacroF1">-</span>
+            </div>
+
+            <div>
+               <strong>Clinical ECP</strong>
+               <span id="algECP">-</span>
+            </div>
+
+            <div>
+               <strong>Log-rank P</strong>
+               <span id="algLogRank">-</span>
+            </div>
+
+         </div>
+
+      </details>
+
+
+      <div class="interpretation-note">
+         Recommendations reflect comparative performance within the evaluated
+         TCGA-BRCA benchmark and should be interpreted as data-driven guidance
+         rather than universal superiority of a particular integration method.
+      </div>
+
+
+      <div class="wizard-actions">
+         <button id="step4Back" class="btn secondary">← Back</button>
+         <button id="startOverBtn" class="btn primary">Start Over</button>
+      </div>
+
+   </section>
+
+</main>
+
+
+<footer>
+   BRCA Multi-Omics Integration Recommender
+</footer>
+
+
+<script src="app.js"></script>
+
+</body>
+</html>
