@@ -261,8 +261,8 @@ function filterCombinations(selected) {
       }
 
       return (
-         toNumber(a.Final_FR,Infinity) -
-         toNumber(b.Final_FR,Infinity)
+         toNumber(a.Final_AvgRank,Infinity) -
+         toNumber(b.Final_AvgRank,Infinity)
       );
 
    });
@@ -325,7 +325,7 @@ function renderCombinationTable() {
          </td>
 
          <td>
-            ${formatNumber(row.Final_FR,4)}
+            ${formatNumber(row.Final_AvgRank,4)}
          </td>
 
          <td>
@@ -397,7 +397,7 @@ function renderCombinationEvaluation() {
 
    setText(
       "detailFinalFR",
-      formatNumber(row.Final_FR,4)
+      formatNumber(row.Final_AvgRank,4)
    );
 
 
