@@ -14,7 +14,7 @@ const DATA_PATHS={
    metadata:"data/algorithm_metadata.csv"
 };
 
-const OMICS=["CNV","MET","MIR","PRO","RNA","SNP"];
+const OMICS=["CNV","MET","MIR","PRO","RNA","MUT"];
 
 let combinationData=[];
 let algorithmData=[];

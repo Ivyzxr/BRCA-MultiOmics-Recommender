@@ -40,7 +40,7 @@ Six omics data types were considered:
 - **MIR** — miRNA Expression
 - **RNA** — mRNA Expression
 - **PRO** — Protein Expression
-- **SNP** — Somatic Mutation
+- **MUT** — Somatic Mutation
 
 PAM50 breast cancer subtypes were used as the primary external subtype reference for evaluating clustering concordance.
 
